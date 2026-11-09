@@ -8,17 +8,17 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.0.7</version>
+		<version>4.0.9</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 
-	<groupId>fi.ishtech.base</groupId>
-	<artifactId>ishtech-base-jpa</artifactId>
-	<version>5.2.0</version>
+	<groupId>fi.ishtech.springboot</groupId>
+	<artifactId>ishtech-springboot-base-jpa</artifactId>
+	<version>5.3.0-SNAPSHOT</version>
 
-	<name>ishtech-base-jpa</name>
+	<name>ishtech-springboot-base-jpa</name>
 	<description>Base project for Spring Boot JPA</description>
-	<url>https://www.ishtech.fi/libs/ishtech-base-jpa</url>
+	<url>https://www.ishtech.fi/libs/ishtech-springboot-base-jpa</url>
 
 	<organization>
 		<name>IshTech</name>
@@ -28,6 +28,7 @@
 	<licenses>
 		<license>
 			<name>BSD-2-Clause</name>
+			<url>https://opensource.org/license/bsd-2-clause</url>
 		</license>
 	</licenses>
 
@@ -43,19 +44,19 @@
 	</developers>
 
 	<scm>
-		<url>https://github.com/ishtech/ishtech-base-jpa</url>
+		<url>https://github.com/ishtech/ishtech-springboot-base-jpa</url>
 	</scm>
 
 	<properties>
 		<java.version>25</java.version>
 
-		<ishtech-i18n.version>5.2.0</ishtech-i18n.version>
+		<ishtech-i18n.version>6.0.0</ishtech-i18n.version>
 
 		<mapstruct.version>1.6.3</mapstruct.version>
-		<mockito.version>5.23.0</mockito.version>
+		<mockito.version>5.24.0</mockito.version>
 
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
-		<central-publishing-maven-plugin.version>0.10.0</central-publishing-maven-plugin.version>
+		<central-publishing-maven-plugin.version>0.12.0</central-publishing-maven-plugin.version>
 	</properties>
 
 	<dependencies>
@@ -75,7 +76,7 @@
 		</dependency>
 
 		<dependency>
-			<groupId>fi.ishtech.core</groupId>
+			<groupId>fi.ishtech.common</groupId>
 			<artifactId>ishtech-i18n</artifactId>
 			<version>${ishtech-i18n.version}</version>
 		</dependency>
@@ -148,8 +149,8 @@
 							<version>${lombok.version}</version>
 						</annotationProcessorPath>
 						<annotationProcessorPath>
-							<groupId>org.hibernate</groupId>
-							<artifactId>hibernate-jpamodelgen</artifactId>
+							<groupId>org.hibernate.orm</groupId>
+							<artifactId>hibernate-processor</artifactId>
 							<version>${hibernate.version}</version>
 						</annotationProcessorPath>
 						<annotationProcessorPath>
