@@ -12,13 +12,13 @@
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
 
-	<groupId>fi.ishtech.base</groupId>
-	<artifactId>ishtech-base-jpa</artifactId>
+	<groupId>fi.ishtech.springboot</groupId>
+	<artifactId>ishtech-springboot-base-jpa</artifactId>
 	<version>5.3.0-springboot-4-1-SNAPSHOT</version>
 
-	<name>ishtech-base-jpa</name>
+	<name>ishtech-springboot-base-jpa</name>
 	<description>Base project for Spring Boot JPA</description>
-	<url>https://www.ishtech.fi/libs/ishtech-base-jpa</url>
+	<url>https://www.ishtech.fi/libs/ishtech-springboot-base-jpa</url>
 
 	<organization>
 		<name>IshTech</name>
@@ -44,7 +44,7 @@
 	</developers>
 
 	<scm>
-		<url>https://github.com/ishtech/ishtech-base-jpa</url>
+		<url>https://github.com/ishtech/ishtech-springboot-base-jpa</url>
 	</scm>
 
 	<properties>
