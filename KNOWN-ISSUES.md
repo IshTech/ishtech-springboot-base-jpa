@@ -1,19 +1,19 @@
 # Known Issues
 
-Confirmed issues that are not fixed yet.
+Known issues that have been confirmed by testing but not yet fixed. Each entry has enough detail to reproduce and fix without re-investigating.
+
+---
 
 ## 1. Default VO mapping methods of the base services return base VOs instead of the service's VO type
 **Status:** open
-**Impact:** high for any service that doesn't override these methods: get-by-id fails with `500 Internal Server Error` (`ClassCastException`), and list APIs return `200 OK` with only the base fields, so the entity's own fields are silently missing
+**Impact:** high for any service that doesn't override these methods: get by id throws `ClassCastException` in the caller, and lists return items with only the base VO's fields.
 **Affects:**
 - `BaseStandardService.findOneByIdAndMapToVoOrElseThrow(Long)` and `BaseStandardService.findAllAndMapToVo(spec, pageable)`
 - `BaseStandardNoIdService.findOneByIdAndMapToVoOrElseThrow(ID)` and `BaseStandardNoIdService.findAllAndMapToVo(spec, pageable)`
 - `BaseLovService.findOneByNameAndMapToVo(String)` and `BaseMasterService.findOneByNameAndMapToVo(String)`, which follow the same pattern (not tested)
-- Confirmed in `springboot-oms`: `GET /api/v1/products/{productId}` and `GET /api/v1/customer-discounts/{customerDiscountId}` return `500`, and `GET /api/v1/products` returns items without `name` and `unitPrice`. `GET /api/v1/sales-orders/{salesOrderId}` and the customer discount and sales order list APIs use the same methods (not tested).
-- Not affected: `ishtech-springboot-jwtauth`, `springboot-books-app` and `springboot-multi-port`, whose services override these methods.
 
 ### Description
-The default methods map the entity with the base mapper method, `getMapper().toBaseStandardVo(...)` (or `toBaseStandardNoIdVo(...)`, `toBaseLovBriefVo(...)`, `toBaseMasterVo(...)`). That method creates an instance of the base VO class, for example `BaseStandardEntityVo`, not of the service's VO type `V`. The result is then cast unchecked to `V` or `Page<V>`:
+The default methods map the entity with the base mapper method `getMapper().toBaseStandardVo(...)` (or `toBaseStandardNoIdVo(...)`, `toBaseLovBriefVo(...)`, `toBaseMasterVo(...)`). That method creates an instance of the base VO class, for example `BaseStandardEntityVo`, not of the service's VO type `V`, and the result is cast unchecked to `V` or `Page<V>`:
 
 ```java
 default V findOneByIdAndMapToVoOrElseThrow(Long id) {
@@ -25,28 +25,78 @@ default Page<V> findAllAndMapToVo(BaseStandardSpec<T, ? extends BaseStandardEnti
 }
 ```
 
-Because of type erasure, the cast inside the method does nothing:
-- For a single object, the caller's implicit cast to the concrete VO type fails with `ClassCastException`, for example `class fi.ishtech.base.vo.BaseStandardEntityVo cannot be cast to class fi.ishtech.practice.oms.payload.ProductVo`.
-- For a page, no element is cast before Jackson serializes it, so the response is `200 OK` with only the base VO's fields (`id`, `isActive`, `description`).
+Example, with a `Product` entity and its `ProductVo`:
 
-The behavior dates from commit `d94df71` (`remove default toBriefVo methods from base classes to avoid conflicts in implementations in child services`, 2025-11-12), which replaced `getMapper().toBriefVo(...)` with the base mapper methods in these default methods. `toBriefVo` was declared in the base mappers and implemented by each child mapper (for example `ProductMapper.toBriefVo` in `springboot-oms`), so it returned the concrete VO type; the base mapper methods don't.
+```java
+public class Product extends BaseStandardEntity {
+	private String name;
+	private BigDecimal unitPrice;
+}
+
+public class ProductVo extends BaseStandardEntityVo {
+	private String name;
+	private BigDecimal unitPrice;
+}
+
+public interface ProductService extends BaseStandardService<Product, ProductVo> {
+}
+```
+
+If `ProductServiceImpl` doesn't override the two methods:
+
+```java
+ProductVo productVo = productService.findOneByIdAndMapToVoOrElseThrow(id);
+// ClassCastException: class fi.ishtech.springboot.base.vo.BaseStandardEntityVo cannot be cast to class ...ProductVo
+
+Page<ProductVo> page = productService.findAllAndMapToVo(spec, pageable);
+// no exception, but each item is a BaseStandardEntityVo: only id, isActive and description, without name and unitPrice
+```
+
+Why get by id fails and the list doesn't: because of type erasure, the casts inside the methods check almost nothing; `(V)` becomes a cast to `BaseStandardEntityVo` and `(Page<V>)` a cast to `Page`, and both succeed. The real check is in the caller. Assigning the get-by-id result to a `ProductVo` makes the compiler insert a cast to `ProductVo`, which fails because the object is only a `BaseStandardEntityVo`. For the list, the caller's cast is only to `Page`, which succeeds, and the items are never cast to `ProductVo`; serializing the page to JSON returns them with only the base fields. Only code that reads an item as `ProductVo`, for example `ProductVo first = page.getContent().get(0);`, fails with the same `ClassCastException`.
+
+`ProductServiceImpl` avoids the issue by overriding both methods and mapping with its own mapper, so the default methods never run:
+
+```java
+@Override
+public ProductVo findOneByIdAndMapToVoOrElseThrow(Long id) {
+	return productMapper.toSemiDetailVo(findOneByIdOrElseThrow(id));
+}
+
+@Override
+public Page<ProductVo> findAllAndMapToVo(BaseStandardSpec<Product, ? extends BaseStandardEntityFilterParams> spec,
+		Pageable pageable) {
+	return findAll(spec, pageable).map(productMapper::toBriefVo);
+}
+```
+
+The behavior dates from commit `d94df71` (`remove default toBriefVo methods from base classes to avoid conflicts in implementations in child services`, 2025-11-12), which replaced `getMapper().toBriefVo(...)` with the base mapper methods in these default methods. `toBriefVo` was declared in the base mappers and implemented by each child mapper, so it returned the concrete VO type; the base mapper methods don't.
 
 ### Steps to reproduce
-Using `springboot-oms` (its `DB-SETUP.md` and `CURL-INFO.md`), with a user whose role is `ADMIN`:
-1. Create a product: `POST /api/v1/products` with `{"name": "Sofa", "unitPrice": 150}`. Expected and actual: `201`, with the new product `id` in the body.
-2. Get it: `GET /api/v1/products/{id}`.
-   - Expected: `200` with `id`, `name` and `unitPrice`.
-   - Actual: `500`; the application log shows the `ClassCastException` above.
-3. List products: `GET /api/v1/products`.
-   - Expected: each item has `name` and `unitPrice`.
-   - Actual: `200` with items like `{"description":null,"id":5,"isActive":true}`.
+With `Product`, `ProductVo` and `ProductService` as in the example, and a `ProductServiceImpl` that doesn't override the two methods:
+1. Save a `Product` with a `name` and a `unitPrice`.
+2. Call `productService.findOneByIdAndMapToVoOrElseThrow(id)` with its `id` and assign the result to a `ProductVo` variable.
+   - Expected: a `ProductVo` with `name` and `unitPrice`.
+   - Actual: `ClassCastException`, as in the example.
+3. Call `productService.findAllAndMapToVo(spec, pageable)` and serialize the page to JSON.
+   - Expected: items with `name` and `unitPrice`.
+   - Actual: items with only `id`, `isActive` and `description`.
 
 ### Likely cause
 The base services have no way to map to the concrete VO type `V`: the base mappers only declare methods that return the base VO classes, and the unchecked casts hide the mismatch at compile time.
 
 ### Suggested fix
-- Declare abstract mapping methods in the base services, for example `V mapToVo(T entity)`, and use them in the default methods instead of the base mapper methods. Each child service then implements the mapping with its own mapper, for example `productMapper.toBriefVo(entity)`, and the compiler enforces it. This is a breaking change for consumers of the library.
-- Alternatively, remove these default methods, so that every child service must implement them.
-- Restoring `toBriefVo` in the base mappers would also fix it, but brings back the conflicts in child mappers that commit `d94df71` removed it for.
-- Remove the unchecked casts and `@SuppressWarnings("unchecked")`.
-- Add tests with a concrete entity, VO and service that check the returned object's class and fields for get-by-id and for a page.
+Recommended: make the default methods return a real instance of `V` with the base fields filled, so that they keep working for services that don't override them, without a breaking change:
+1. Add a base mapper method that fills an existing VO instead of creating one, for example `void toExistingBaseStandardVo(BaseStandardEntity entity, @MappingTarget BaseStandardEntityVo vo);`. MapStruct sets the base fields on whatever subclass instance it is given. Give it a new name, not `toBaseStandardVo`: child mappers use `@InheritConfiguration(name = "toBaseStandardVo")`, and a second method with that name could make it ambiguous and break their compilation.
+2. In the default methods, resolve the service's VO class `V` from the service's class with Spring's `ResolvableType`, for example `ResolvableType.forClass(getClass()).as(BaseStandardService.class).resolveGeneric(1)`, create an instance with its no-argument constructor, and fill it with the method from step 1.
+3. Remove the unchecked casts and `@SuppressWarnings("unchecked")`.
+4. Do the same in `BaseStandardNoIdService`, `BaseLovService` and `BaseMasterService`.
+5. Add tests with a concrete entity, VO and service, checking for get by id and for a page that the returned objects are of the VO class and have the base fields.
+
+The consumer classes don't need code changes, with these conditions:
+
+| Class | Change needed | Why |
+|---|---|---|
+| `ProductService` | none | It already declares `V` as `ProductVo` (`BaseStandardService<Product, ProductVo>`), which `ResolvableType` reads. |
+| `ProductServiceImpl` | none | Without overrides, the default methods return a real `ProductVo` with the base fields. Keep the overrides, as above, to get the VO's own fields, such as `name` and `unitPrice`. |
+| `ProductMapper` | none, but recompile | MapStruct generates the new base mapper method in `ProductMapperImpl`, because `ProductMapper` extends `BaseStandardMapper`. Consumers get it when they build against the new version. |
+| `ProductVo` | only if it has no no-argument constructor | The default methods create the VO with its no-argument constructor, so the VO must have one and must not be abstract. Lombok `@Data` provides one; a VO with only `@Builder` or `@AllArgsConstructor` also needs `@NoArgsConstructor`, otherwise the default methods fail at runtime. |
