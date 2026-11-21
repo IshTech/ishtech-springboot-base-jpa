@@ -1,15 +1,15 @@
 <!-- Repo-specific instructions. The shared IshTech rules live in .claude/rules/ and are identical across repos; don't put repo-specific content there. -->
-# ishtech-base-jpa
+# ishtech-springboot-base-jpa
 
 The owner's standing instructions are in `.claude/rules/` (`owner-workflow.md`, `git-and-branches.md`, `versions-and-releases.md`, `build-and-test.md`, `build-tooling.md`, `documentation.md`, `repositories.md`, `cicd-dependency-check.md`). They apply to every task in this repo. This file adds only what is specific to this repo.
 
 ## About this repo
 - It's a library with no runnable application (the Spring Boot plugin's repackage is skipped in `pom.xml`), so it has only test Level 1 of its own.
 - Upstream library: `ishtech-i18n-java` (`rules/repositories.md`). The version is declared in `pom.xml`.
-- Dependent tests apply (`rules/build-and-test.md`, section "Dependent tests"): they confirm that a change here doesn't break the projects that use `ishtech-base-jpa` and has the intended effect in them.
+- Dependent tests apply (`rules/build-and-test.md`, section "Dependent tests"): they confirm that a change here doesn't break the projects that use `ishtech-springboot-base-jpa` and has the intended effect in them.
   - Dependent library: `ishtech-springboot-jwtauth` (`rules/repositories.md`).
   - Default dependent: [ishtech-springboot-jwtauth](https://github.com/ishtech/ishtech-springboot-jwtauth).
-  - `ishtech-base-jpa` is public on Maven Central (`README.md`, section "Publish to Maven Central"), so it may have other dependents that nobody can list.
+  - `ishtech-springboot-base-jpa` is public on Maven Central (`README.md`, section "Publish to Maven Central"), so it may have other dependents that nobody can list.
 
 ## Read the doc before doing the thing
 The docs are the source of truth. Don't guess commands: open the matching file and section first, and follow its links.

@@ -1,4 +1,4 @@
-# ishtech-base-jpa
+# ishtech-springboot-base-jpa
 A foundational Spring Boot JPA library providing a reusable boilerplate for entity, repository, service, specification, and mapper layers.
 It encapsulates common CRUD patterns, filtering mechanisms, and mapping logic through well-structured base classes and interfaces.
 This helps keep business modules lightweight, letting them focus only on domain-specific logic while inheriting standardized behavior and conventions.
@@ -20,9 +20,9 @@ Which library version to use for your JDK version: [JDK-VERSIONS.md](JDK-VERSION
 
 ```
 <dependency>
-	<groupId>fi.ishtech.base</groupId>
-	<artifactId>ishtech-base-jpa</artifactId>
-	<version>${ishtech-base-jpa.version}</version>
+	<groupId>fi.ishtech.springboot</groupId>
+	<artifactId>ishtech-springboot-base-jpa</artifactId>
+	<version>${ishtech-springboot-base-jpa.version}</version>
 </dependency>
 
 ```
@@ -30,7 +30,7 @@ Which library version to use for your JDK version: [JDK-VERSIONS.md](JDK-VERSION
 ### Gradle
 
 ```
-implementation("fi.ishtech.base:ishtech-base-jpa:${ishtechBaseJpaVersion}")
+implementation("fi.ishtech.springboot:ishtech-springboot-base-jpa:${ishtechSpringbootBaseJpaVersion}")
 ```
 
 ## Build
