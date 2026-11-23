@@ -14,7 +14,7 @@
 
 	<groupId>fi.ishtech.springboot</groupId>
 	<artifactId>ishtech-springboot-base-jpa</artifactId>
-	<version>6.0.0-jdk17</version>
+	<version>7.0.0-jdk17</version>
 
 	<name>ishtech-springboot-base-jpa</name>
 	<description>Base project for Spring Boot JPA</description>
